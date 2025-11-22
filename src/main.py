@@ -242,15 +242,20 @@ def main():
     for message in st.session_state.chat_client.conversation_history:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-    
+
     # Check if session limit is reached
-    if st.session_state.chat_client.get_question_count() >= st.session_state.chat_client.get_max_questions():
+    is_session_limited = st.session_state.chat_client.get_question_count() >= st.session_state.chat_client.get_max_questions()
+    if is_session_limited:
         st.info("Session limit reached. Please upload a new PDF to start a new session.")
-    
-    # Chat input
-    prompt = None
-    language = "english"  # Default language
+
+    # Always render chat input at the bottom
+    prompt = st.chat_input(
+        "What would you like to know?",
+        disabled=is_session_limited
+    )
+
     # Check if there's a pending question from suggested questions
+    language = "english"  # Default language
     if "pending_question" in st.session_state:
         prompt = st.session_state.pending_question
         language = st.session_state.get("pending_language", "english")
@@ -258,13 +263,8 @@ def main():
         if "pending_language" in st.session_state:
             del st.session_state.pending_language
 
-    # Show chat input or process pending question
-    if not prompt:  # Only show input if there's no pending question
-        prompt = st.chat_input("What would you like to know?",
-                              disabled=(st.session_state.chat_client.get_question_count() >= st.session_state.chat_client.get_max_questions()))
-
+    # Process the question if one is provided
     if prompt:
-        # Process the question
         process_question(prompt, api_key, language)
 
 def process_question(prompt, api_key, language="english"):

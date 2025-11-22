@@ -93,32 +93,37 @@ class ChatClient:
         # For Thai text, it might be different, but this is a simple approximation
         return len(text) // 4
     
-    def chat_with_dashscope(self, message: str) -> Generator[str, None, None]:
+    def chat_with_dashscope(self, message: str, language: str = "english") -> Generator[str, None, None]:
         """
         Send a message to DashScope and stream the response using OpenAI-compatible API
+
+        Args:
+            message: The user's question
+            language: "thai" or "english" to select appropriate system prompt
         """
         if not self.client:
             raise ValueError("DashScope API key not configured")
-        
+
         # Check if we've reached the question limit
         if self.question_count >= self.max_questions:
             yield "Session limit reached. You have used all 10 questions. The session will now reset."
             self.reset_session()
             return
-        
+
         # Add context to the message if we have knowledge base
         context = self._get_context()
         if context:
             full_message = f"Use the following context to answer the question:\n\n{context}\n\nQuestion: {message}"
         else:
             full_message = message
-        
+
         # Add to conversation history
         self.conversation_history.append({"role": "user", "content": message})
         self.question_count += 1  # Increment question count
-        
-        # Prepare messages for API with improved system prompt for Thai government e-bidding documents
-        system_prompt = """คุณคือผู้เชี่ยวชาญด้านการวิเคราะห์เอกสารประกวดราคาอิเล็กทรอนิกส์ภาครัฐของไทย consultant
+
+        # Select system prompt based on language
+        if language.lower() == "thai":
+            system_prompt = """คุณคือผู้เชี่ยวชาญด้านการวิเคราะห์เอกสารประกวดราคาอิเล็กทรอนิกส์ภาครัฐของไทย consultant
 
 **เป้าหมายของคุณคือ:**
 1.  วิเคราะห์เอกสารประกวดราคาซื้อด้วยวิธีประกวดราคาอิเล็กทรอนิกส์ (e-bidding document) ที่แนบมานี้ (ซึ่งต่อไปจะเรียกว่า "เอกสาร")
@@ -128,7 +133,7 @@ class ChatClient:
 
 **หากเหมาะสมรูปแบบการตอบกลับที่ต้องการ:**
 -   ระบุคำถามของผู้เสนอราคา (Question)
--   ให้คำตอบที่สรุป (Summary Answer)
+-   ให้คำตอบที่สรุปเป็น point form (Summary Answer)
 -   ระบุข้อความที่ตรงตามเงื่อนไข (Exact Sentence from pdf)
 -   ระบุแหล่งที่มา (Source/Citation)
 
@@ -137,6 +142,26 @@ class ChatClient:
 **Summary Answer:** ...
 **Exact Sentence:** ...
 **Source/Citation:** [ข้อ X.Y]"""
+        else:  # English
+            system_prompt = """You are an expert specialist in analyzing Thai government e-bidding documents.
+
+**Your objectives are:**
+1. Analyze the e-bidding purchase document provided to you (hereinafter called "Document")
+2. When you receive a question from a Bidder, search for the most relevant and applicable section, clause, or text in the "Document" to answer it
+3. Your answer must be the original text from the document (Direct Quote) with a clear citation of the clause number or source
+4. Do not provide information that is not in the provided document
+
+**Response format:**
+- State the Bidder's question (Question)
+- Provide a summarized answer in point form (Summary Answer)
+- Provide the exact relevant sentence(s) from the document (Exact Sentence from Document)
+- Cite the source (Source/Citation)
+
+**Example response format:**
+**Question:** ...
+**Summary Answer:** ...
+**Exact Sentence:** ...
+**Source/Citation:** [Clause X.Y]"""
         
         messages = [{"role": "system", "content": system_prompt}]
         for msg in self.conversation_history[:-1]:  # All but the last one
@@ -148,6 +173,7 @@ class ChatClient:
         input_tokens = self._estimate_tokens(input_text)
         
         logger.info(f"Sending request with model: {self.default_model}")
+        logger.info(f"Language: {language}")
         logger.info(f"Input tokens (estimated): {input_tokens}")
         logger.info(f"Messages: {messages}")
         logger.info(f"Base URL: {self.base_url}")
