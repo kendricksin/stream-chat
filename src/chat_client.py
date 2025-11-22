@@ -3,23 +3,29 @@ import hashlib
 from typing import List, Dict, Generator, Optional
 from PyPDF2 import PdfReader
 from openai import OpenAI
-from dotenv import load_dotenv
 import logging
 import json
+import streamlit as st
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load environment variables
-load_dotenv()
-
 class ChatClient:
     def __init__(self):
-        # Initialize API configuration
-        self.api_key = os.getenv("API_KEY")
-        self.base_url = os.getenv("BASE_URL", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1")
-        self.default_model = os.getenv("DEFAULT_MODEL", "qwen3-max")
+        # Initialize API configuration from Streamlit secrets
+        try:
+            self.api_key = st.secrets.get("API_KEY")
+            self.base_url = st.secrets.get("BASE_URL", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1")
+            self.default_model = st.secrets.get("DEFAULT_MODEL", "qwen3-max")
+        except (AttributeError, FileNotFoundError):
+            # Fallback for non-Streamlit contexts (e.g., testing)
+            import os
+            from dotenv import load_dotenv
+            load_dotenv()
+            self.api_key = os.getenv("API_KEY")
+            self.base_url = os.getenv("BASE_URL", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1")
+            self.default_model = os.getenv("DEFAULT_MODEL", "qwen3-max")
 
         # Initialize client
         if self.api_key:

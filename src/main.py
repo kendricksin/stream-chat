@@ -34,8 +34,8 @@ st.set_page_config(
 def main():
     st.title("🤖 Streamlit Chatbot with PDF Knowledge Base")
 
-    # Check API keys
-    api_key = os.getenv("API_KEY")
+    # Check API key from secrets
+    api_key = st.secrets.get("API_KEY")
     
     # Sidebar for configuration and PDF upload
     with st.sidebar:
@@ -43,10 +43,10 @@ def main():
         
         # API configuration check
         if not api_key:
-            st.error("API key not configured. Please set API_KEY in your .env file.")
+            st.error("API key not configured. Please set API_KEY in .streamlit/secrets.toml file.")
             st.stop()
 
-        st.info(f"Using API: {os.getenv('BASE_URL', 'DashScope')}")
+        st.info(f"Using API: {st.secrets.get('BASE_URL', 'DashScope')}")
         
         # Show question counter
         question_count = st.session_state.chat_client.get_question_count()
@@ -192,8 +192,8 @@ def main():
             st.write("Session ID:", st.session_state.session_id)
             st.write("Conversation History:", st.session_state.chat_client.conversation_history)
             st.write("Knowledge Base:", st.session_state.chat_client.knowledge_base)
-            st.write("Model:", os.getenv("DEFAULT_MODEL", "qwen3-max"))
-            st.write("Base URL:", os.getenv("BASE_URL", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"))
+            st.write("Model:", st.secrets.get("DEFAULT_MODEL", "qwen3-max"))
+            st.write("Base URL:", st.secrets.get("BASE_URL", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"))
             st.write("Question Count:", st.session_state.chat_client.get_question_count())
             if "selected_sections" in st.session_state:
                 st.write("Selected Sections:", st.session_state.selected_sections)
@@ -281,7 +281,7 @@ def process_question(prompt, api_key, language="english"):
         try:
             # Use configured API
             if not api_key:
-                st.error("API key not configured. Please set API_KEY in your .env file.")
+                st.error("API key not configured. Please set API_KEY in .streamlit/secrets.toml file.")
                 st.stop()
 
             logger.info(f"Sending message to API: {prompt}")
