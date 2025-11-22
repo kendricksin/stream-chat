@@ -31,35 +31,96 @@ st.set_page_config(
     layout="wide"
 )
 
+# Custom CSS for compact UI
+st.markdown("""
+<style>
+    /* Reduce default spacing and font sizes */
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 0rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    /* Reduce header sizes */
+    h1 {
+        font-size: 1.8rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    h2 {
+        font-size: 1.3rem !important;
+        margin-bottom: 0.3rem !important;
+        margin-top: 0.5rem !important;
+    }
+
+    h3 {
+        font-size: 1.1rem !important;
+        margin-bottom: 0.3rem !important;
+    }
+
+    /* Reduce button and input padding */
+    button {
+        font-size: 0.9rem !important;
+        padding: 0.4rem 0.8rem !important;
+    }
+
+    /* Compact metric */
+    [data-testid="metric-container"] {
+        padding: 0.5rem 0 !important;
+    }
+
+    /* Reduce general text size */
+    body {
+        font-size: 0.95rem !important;
+    }
+
+    /* Compact info/warning boxes */
+    .stAlert {
+        padding: 0.5rem 1rem !important;
+        font-size: 0.9rem !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 def main():
     st.title("🤖 Streamlit Chatbot with PDF Knowledge Base")
 
     # Check API key from secrets
     api_key = st.secrets.get("API_KEY")
     
-    # Sidebar for configuration and PDF upload
+    # Sidebar for PDF upload and controls
     with st.sidebar:
-        st.header("Configuration")
-        
         # API configuration check
         if not api_key:
             st.error("API key not configured. Please set API_KEY in .streamlit/secrets.toml file.")
             st.stop()
 
-        st.info(f"Using API: {st.secrets.get('BASE_URL', 'DashScope')}")
-        
-        # Show question counter
+        # Reset button at top
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Reset Session", use_container_width=True):
+                st.session_state.chat_client.reset_session()
+                if "parsed_document" in st.session_state:
+                    del st.session_state.parsed_document
+                if "selected_sections" in st.session_state:
+                    del st.session_state.selected_sections
+                if "show_section_selector" in st.session_state:
+                    del st.session_state.show_section_selector
+                st.rerun()
+
+        # Show question counter (compact)
         question_count = st.session_state.chat_client.get_question_count()
         max_questions = st.session_state.chat_client.get_max_questions()
-        st.metric("Questions Used", f"{question_count}/{max_questions}")
-        
+        with col2:
+            st.metric("Questions", f"{question_count}/{max_questions}")
+
         if question_count >= max_questions:
             st.warning("Session limit reached! Upload a new PDF to start a new session.")
-        
-        # Debug toggle
-        debug_mode = st.checkbox("Debug Mode", value=False)
-        
-        st.header("PDF Knowledge Base")
+
+        st.divider()
+
+        st.subheader("Upload PDF")
         uploaded_file = st.file_uploader(
             "Upload a PDF file",
             type=["pdf"],
@@ -172,33 +233,7 @@ def main():
         
         # Show current knowledge base info
         if st.session_state.chat_client.knowledge_base:
-            st.info(f"Knowledge base with {len(st.session_state.chat_client.knowledge_base)} item(s) loaded")
-        
-        st.divider()
-        
-        if st.button("Reset Session"):
-            st.session_state.chat_client.reset_session()
-            if "parsed_document" in st.session_state:
-                del st.session_state.parsed_document
-            if "selected_sections" in st.session_state:
-                del st.session_state.selected_sections
-            if "show_section_selector" in st.session_state:
-                del st.session_state.show_section_selector
-            st.rerun()
-    
-    # Debug information
-    if debug_mode:
-        with st.expander("Debug Information"):
-            st.write("Session ID:", st.session_state.session_id)
-            st.write("Conversation History:", st.session_state.chat_client.conversation_history)
-            st.write("Knowledge Base:", st.session_state.chat_client.knowledge_base)
-            st.write("Model:", st.secrets.get("DEFAULT_MODEL", "qwen3-max"))
-            st.write("Base URL:", st.secrets.get("BASE_URL", "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"))
-            st.write("Question Count:", st.session_state.chat_client.get_question_count())
-            if "selected_sections" in st.session_state:
-                st.write("Selected Sections:", st.session_state.selected_sections)
-            if "parsed_document" in st.session_state:
-                st.write("Parsed Document Structure:", json.dumps(st.session_state.parsed_document, indent=2, ensure_ascii=False))
+            st.caption(f"📚 Knowledge base: {len(st.session_state.chat_client.knowledge_base)} item(s)")
     
     # Main chat interface
     st.subheader("Chat")
