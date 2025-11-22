@@ -20,7 +20,6 @@ class ChatClient:
             self.default_model = st.secrets.get("DEFAULT_MODEL", "qwen3-max")
         except (AttributeError, FileNotFoundError):
             # Fallback for non-Streamlit contexts (e.g., testing)
-            import os
             from dotenv import load_dotenv
             load_dotenv()
             self.api_key = os.getenv("API_KEY")
