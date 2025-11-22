@@ -1,147 +1,183 @@
 # Streamlit Chatbot with PDF Knowledge Base
 
-A Streamlit-based chatbot application that supports PDF uploads as a knowledge reference for question answering. The application uses DashScope API from Alibaba Cloud for generating responses through its OpenAI-compatible interface.
+A Streamlit-based chatbot application that supports PDF uploads as a knowledge reference for question answering. The application supports multiple AI providers through OpenAI-compatible APIs, including Google Gemini and Alibaba DashScope.
 
 ## Project Description
 
 This project implements a chatbot interface that allows users to:
 1. Upload PDF documents as a knowledge base
-2. Ask questions about the content of those documents
+2. Ask questions in Thai or English about the document content
 3. Receive AI-generated answers based on the document content
+4. Switch between different AI providers (DashScope, Gemini, etc.)
 
-The application uses DashScope's Qwen models via the OpenAI-compatible API to process queries and generate responses. It maintains conversation history during the session and provides a streaming interface for real-time response display.
+The application maintains conversation history during the session and provides a streaming interface for real-time response display.
 
-## Vendor Requirements
+## Supported Providers
 
-To use this application, you need:
+The application is provider-agnostic and supports any OpenAI-compatible API:
 
-1. **DashScope API Key**:
-   - Register for an account at [Aliyun DashScope](https://dashscope.console.aliyun.com/)
-   - Generate an API key in the console
-   - Add the key to the `.env` file
+### 1. **Google Gemini** (Recommended)
+- Models: `gemini-1.5-pro`, `gemini-2.0-flash`, `gemini-2.0-flash-lite`
+- Endpoint: `https://generativelanguage.googleapis.com/v1beta/openai/`
+- [Get API Key](https://aistudio.google.com/apikey)
 
-2. **Supported Models**:
-   - The application is configured to use `qwen-plus` by default
-   - Other supported Qwen models can be specified in the `.env` file
-
-3. **API Endpoint**:
-   - The application uses the international OpenAI-compatible API endpoint: `https://dashscope-intl.aliyuncs.com/compatible-mode/v1`
-   - This is automatically configured in the application
+### 2. **DashScope (Alibaba Cloud)**
+- Models: `qwen-turbo`, `qwen-plus`, `qwen-max`, `qwen3-max`
+- Endpoint: `https://dashscope-intl.aliyuncs.com/compatible-mode/v1`
+- [Get API Key](https://dashscope.console.aliyun.com/)
 
 ## Features
 
-- Chat interface with streaming responses
-- PDF upload and text extraction for knowledge base
-- Support for DashScope APIs via OpenAI-compatible interface
-- Session management that resets on page refresh
-- Question limit (10 questions per session) for resource management
-- Environment-based configuration
-- Debug mode for troubleshooting
-- Automatic PDF processing with default section selection
-- Suggested questions in both Thai and English
-- Section-based knowledge management for large documents
-- Improved UI with clear separation between suggested questions and chat history
+- 🎯 **Bilingual Support**: Thai and English system prompts and suggested questions
+- 📱 **Compact UI**: Optimized styling for better space utilization
+- 📊 **PDF Processing**: Automatic text extraction with section-based knowledge management
+- 🔄 **Streaming Responses**: Real-time response display
+- 💾 **Session Management**: 10-question per session limit with auto-reset
+- 🔐 **Secure Secrets**: Uses Streamlit's `secrets.toml` for API credentials
+- 🌐 **Multi-Provider**: Works with any OpenAI-compatible API
+- 🎭 **Language Selection**: Automatically selects appropriate system prompt based on user's question language
 
 ## Setup
 
-1. Install the required dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-   or
-   ```bash
-   pip install streamlit dashscope PyPDF2 python-dotenv openai
-   ```
+### 1. Clone and Install Dependencies
 
-2. Set up your API keys in the `.env` file:
-   ```
-   DASHSCOPE_API_KEY=your_dashscope_api_key_here
-   DEFAULT_MODEL=qwen-plus
-   ```
+```bash
+git clone <repository-url>
+cd stream-chat
+uv sync
+```
+
+Or with pip:
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Configure API Credentials
+
+Create `.streamlit/secrets.toml` in your project root:
+
+```toml
+# For Google Gemini
+API_KEY = "your_gemini_api_key_here"
+BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
+DEFAULT_MODEL = "gemini-1.5-pro"
+
+# For DashScope
+# API_KEY = "your_dashscope_api_key_here"
+# BASE_URL = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+# DEFAULT_MODEL = "qwen3-max"
+```
+
+See `.streamlit/secrets.toml.example` for a template.
 
 ## Usage
 
 Run the application with:
 ```bash
-streamlit run main.py
+streamlit run src/main.py
 ```
 
-or
-
+Or with uv:
 ```bash
-python -m streamlit run main.py
+uv run streamlit run src/main.py
 ```
 
-### How to use:
+### How to Use
 
-1. Upload a PDF file using the file uploader in the sidebar
-2. The application will automatically process the PDF and add default sections (2, 4, 5, 6) to the knowledge base
-3. Ask questions in the chat interface or click on suggested questions (in Thai or English)
-4. The bot will use the PDF content as reference to answer your questions
+1. **Upload a PDF**: Use the "Upload PDF" section in the left sidebar
+2. **Automatic Processing**: The app automatically extracts text and adds default sections to the knowledge base
+3. **Ask Questions**:
+   - Click suggested questions (Thai or English) for pre-formatted queries
+   - Or type your own questions in the chat input box
+4. **Language Selection**: The system automatically detects your question language and uses the appropriate system prompt
+5. **Reset Session**: Use the "Reset Session" button at the top of the sidebar to start fresh
 
-### Session Management:
+### Session Management
 
-- Each session is limited to 10 questions and responses
-- After reaching the limit, you'll need to upload a new PDF to start a new session
-- You can manually reset the session using the "Reset Session" button
+- Each session is limited to **10 questions**
+- A new session starts when you upload a new PDF
+- Click "Reset Session" to manually reset and clear conversation history
+- The session automatically resets when the 10-question limit is reached
 
-### PDF Section Management:
+### PDF Section Management
 
-- After uploading a PDF, the application automatically processes it and adds default sections to the knowledge base
-- You can click "Select Sections to Include" to customize which sections of the document to use as reference
-- Click "Update Knowledge Base with Selected Sections" to apply your section selections
+After uploading a PDF, you can:
+- Automatically use default sections (2, 4, 5, 6)
+- Click "Select Sections to Include" to customize which sections to use
+- Click "Update Knowledge Base with Selected Sections" to apply changes
 
 ## Deployment
 
-To deploy this application on a VM:
+### On Streamlit Cloud
 
-### Required Files:
-- [main.py](file://c:\Users\Sin%20Kendrick\Desktop\stream-chat\main.py) - Main Streamlit application
-- [chat_client.py](file://c:\Users\Sin%20Kendrick\Desktop\stream-chat\chat_client.py) - Chat client implementation
-- [pdf_parser_v2.py](file://c:\Users\Sin%20Kendrick\Desktop\stream-chat\pdf_parser_v2.py) - PDF parsing functionality
-- [requirements.txt](file://c:\Users\Sin%20Kendrick\Desktop\stream-chat\requirements.txt) - Python dependencies
-- [pyproject.toml](file://c:\Users\Sin%20Kendrick\Desktop\stream-chat\pyproject.toml) - Project configuration
-- [.env](file://c:\Users\Sin%20Kendrick\Desktop\stream-chat\result.json) - Environment variables (create on VM with your actual API keys)
+1. Push your code to GitHub
+2. Go to [share.streamlit.io](https://share.streamlit.io)
+3. Click "New app" and connect your GitHub repository
+4. In app settings, add your secrets:
+   ```
+   [secrets]
+   API_KEY = "your_api_key_here"
+   BASE_URL = "https://your_api_endpoint/"
+   DEFAULT_MODEL = "your_model_name"
+   ```
 
-### Deployment Steps:
+### On a VM/Self-Hosted
 
-1. Transfer the required files to your VM
-2. Install Python 3.8+ on the VM if not already installed
+#### Required Files:
+- `src/main.py` - Main Streamlit application
+- `src/chat_client.py` - Chat client implementation
+- `src/pdf_parser_v2.py` - PDF parsing functionality
+- `requirements.txt` - Python dependencies
+- `pyproject.toml` - Project configuration
+- `.streamlit/secrets.toml` - API configuration (create on VM)
+
+#### Deployment Steps:
+
+1. Install Python 3.10+ on the VM
+2. Clone or transfer the project files
 3. Install dependencies:
+   ```bash
+   uv sync
+   ```
+   or
    ```bash
    pip install -r requirements.txt
    ```
-4. Create a [.env](file://c:\Users\Sin%20Kendrick\Desktop\stream-chat\result.json) file with your API keys:
-   ```
-   DASHSCOPE_API_KEY=your_actual_api_key_here
-   DEFAULT_MODEL=qwen-plus
+4. Create `.streamlit/secrets.toml` with your API credentials:
+   ```toml
+   API_KEY = "your_actual_api_key_here"
+   BASE_URL = "https://your_api_endpoint/"
+   DEFAULT_MODEL = "your_model_name"
    ```
 5. Run the application:
    ```bash
-   streamlit run main.py
+   streamlit run src/main.py
    ```
 
-### Firewall/Network Configuration:
+#### Firewall/Network Configuration:
 
-- Ensure port 8501 (default Streamlit port) is open if you want to access the application externally
-- You may need to run with `streamlit run main.py --server.port 80` to use a different port
-- For external access, use `streamlit run main.py --server.address 0.0.0.0`
+- Default port: **8501** (open in firewall if accessing externally)
+- Custom port: `streamlit run src/main.py --server.port 80`
+- External access: `streamlit run src/main.py --server.address 0.0.0.0`
+- Production: Consider using a reverse proxy (Nginx, Apache) in front of Streamlit
 
-## Debugging
+## Troubleshooting
 
-If you're experiencing issues with the chat functionality, you can enable Debug Mode:
+### API Errors
 
-1. Check the "Debug Mode" checkbox in the sidebar
-2. Expand the "Debug Information" section to see:
-   - Session ID
-   - Conversation history
-   - Knowledge base content
-3. Check the console/terminal for detailed logging information
+| Error | Solution |
+|-------|----------|
+| **404 Not Found** | Check that your model name is available with your provider |
+| **401 Unauthorized** | Verify your API key is correct in `secrets.toml` |
+| **Chat input disappears** | Refresh the page or check browser console for errors |
+| **Slow responses** | Check API provider status and internet connection |
 
-Common issues and solutions:
-- **404 Error**: Check that your model name is correct and available in your DashScope account
-- **401 Error**: Verify your API key is correct and has proper permissions
-- **No response**: Enable debug mode to see detailed logs of the request/response flow
+### Check Logs
+
+Run with verbose logging:
+```bash
+streamlit run src/main.py --logger.level=debug
+```
 
 ## How it works
 
@@ -153,6 +189,51 @@ Common issues and solutions:
 
 ## Configuration
 
-Environment variables:
-- `DASHSCOPE_API_KEY`: Your DashScope API key
-- `DEFAULT_MODEL`: The default model to use (default: qwen-plus)
+Secrets (in `.streamlit/secrets.toml`):
+- `API_KEY`: Your API key for the selected provider (required)
+- `BASE_URL`: The API endpoint URL (required)
+- `DEFAULT_MODEL`: The model to use (required)
+
+## Architecture
+
+### File Structure
+
+```
+stream-chat/
+├── src/
+│   ├── main.py              # Main Streamlit application
+│   ├── chat_client.py       # OpenAI-compatible chat client
+│   └── pdf_parser_v2.py     # PDF text extraction and parsing
+├── .streamlit/
+│   ├── secrets.toml         # API credentials (git-ignored)
+│   └── secrets.toml.example # Template for secrets
+├── requirements.txt         # Python dependencies
+├── pyproject.toml          # Project metadata
+└── README.md               # This file
+```
+
+### Key Components
+
+1. **ChatClient**: Manages API interactions and conversation state
+   - Supports any OpenAI-compatible API
+   - Language-specific system prompts (Thai/English)
+   - Streaming response support
+   - Session and token management
+
+2. **Main App**: Streamlit UI
+   - Compact, responsive design
+   - Sidebar controls (Reset, PDF upload, Section management)
+   - Suggested questions in Thai/English
+   - Real-time chat interface
+
+3. **PDF Parser**: Document processing
+   - Section-based extraction
+   - Multi-language support
+
+## License
+
+This project is open source and available under the MIT License.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
